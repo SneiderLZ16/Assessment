@@ -1,0 +1,12 @@
+/home/sneiderlz16/Escritorio/Assessment/Backend/Assessment.Domain/bin/Debug/net8.0/Assessment.Domain.deps.json
+/home/sneiderlz16/Escritorio/Assessment/Backend/Assessment.Domain/bin/Debug/net8.0/Assessment.Domain.dll
+/home/sneiderlz16/Escritorio/Assessment/Backend/Assessment.Domain/bin/Debug/net8.0/Assessment.Domain.pdb
+/home/sneiderlz16/Escritorio/Assessment/Backend/Assessment.Domain/obj/Debug/net8.0/Assessment.Domain.GeneratedMSBuildEditorConfig.editorconfig
+/home/sneiderlz16/Escritorio/Assessment/Backend/Assessment.Domain/obj/Debug/net8.0/Assessment.Domain.AssemblyInfoInputs.cache
+/home/sneiderlz16/Escritorio/Assessment/Backend/Assessment.Domain/obj/Debug/net8.0/Assessment.Domain.AssemblyInfo.cs
+/home/sneiderlz16/Escritorio/Assessment/Backend/Assessment.Domain/obj/Debug/net8.0/Assessment.Domain.csproj.CoreCompileInputs.cache
+/home/sneiderlz16/Escritorio/Assessment/Backend/Assessment.Domain/obj/Debug/net8.0/Assessment.Domain.sourcelink.json
+/home/sneiderlz16/Escritorio/Assessment/Backend/Assessment.Domain/obj/Debug/net8.0/Assessment.Domain.dll
+/home/sneiderlz16/Escritorio/Assessment/Backend/Assessment.Domain/obj/Debug/net8.0/refint/Assessment.Domain.dll
+/home/sneiderlz16/Escritorio/Assessment/Backend/Assessment.Domain/obj/Debug/net8.0/Assessment.Domain.pdb
+/home/sneiderlz16/Escritorio/Assessment/Backend/Assessment.Domain/obj/Debug/net8.0/ref/Assessment.Domain.dll

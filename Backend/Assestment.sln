@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assessment.Infrastructure",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assessment.Api", "Assessment.Api\Assessment.Api.csproj", "{48D61873-EB41-406A-94F1-CA8423135326}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assessment.Tests", "Assessment.Tests\Assessment.Tests.csproj", "{6A809557-4B30-4C53-BD63-3F17CDB6DC40}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -36,5 +38,9 @@ Global
 		{48D61873-EB41-406A-94F1-CA8423135326}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{48D61873-EB41-406A-94F1-CA8423135326}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{48D61873-EB41-406A-94F1-CA8423135326}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6A809557-4B30-4C53-BD63-3F17CDB6DC40}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6A809557-4B30-4C53-BD63-3F17CDB6DC40}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6A809557-4B30-4C53-BD63-3F17CDB6DC40}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6A809557-4B30-4C53-BD63-3F17CDB6DC40}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
