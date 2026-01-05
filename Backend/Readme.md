@@ -71,3 +71,11 @@ Assessment.Api
 ### Run Project 
 ```
 dotnet run --project Assessment.Api
+
+```
+
+### Test code
+
+```
+Dotnet test
+```
