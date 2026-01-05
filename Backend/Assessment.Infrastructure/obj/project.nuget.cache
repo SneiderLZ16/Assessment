@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "PKI7+B9hL38=",
+  "success": true,
+  "projectFilePath": "/home/sneiderlz16/Escritorio/Assessment/Backend/Assessment.Infrastructure/Assessment.Infrastructure.csproj",
+  "expectedPackageFiles": [
+    "/home/sneiderlz16/.nuget/packages/microsoft.netcore.app.ref/8.0.21/microsoft.netcore.app.ref.8.0.21.nupkg.sha512",
+    "/home/sneiderlz16/.nuget/packages/microsoft.aspnetcore.app.ref/8.0.21/microsoft.aspnetcore.app.ref.8.0.21.nupkg.sha512"
+  ],
+  "logs": []
+}
