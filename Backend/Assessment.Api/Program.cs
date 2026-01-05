@@ -10,7 +10,10 @@ using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Controllers
+// =========
+// Services
+// =========
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
@@ -45,9 +48,24 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// DbContext (MySQL)
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+// CORS 
+var frontendUrl = builder.Configuration["FRONTEND_URL"];
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("Frontend", policy =>
+    {
+        if (!string.IsNullOrWhiteSpace(frontendUrl))
+            policy.WithOrigins(frontendUrl);
+        else
+            policy.AllowAnyOrigin();
 
+        policy.AllowAnyHeader();
+        policy.AllowAnyMethod();
+    });
+});
+
+// DbContext 
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
     options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
@@ -59,7 +77,7 @@ builder.Services
     {
         options.User.RequireUniqueEmail = true;
 
-        
+       
         options.Password.RequireDigit = true;
         options.Password.RequiredLength = 6;
         options.Password.RequireNonAlphanumeric = false;
@@ -98,25 +116,38 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddAuthorization();
 
-// Application services
+// App services
 builder.Services.AddScoped<ICourseService, CourseService>();
 builder.Services.AddScoped<ILessonService, LessonService>();
 
 var app = builder.Build();
 
-// Swagger
+// ============================
+// Middleware pipeline
+// ============================
+
 app.UseSwagger();
 app.UseSwaggerUI();
 
-// Middlewares
 app.UseHttpsRedirection();
+
+app.UseCors("Frontend");
 
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
 
-// Seed (usuario de prueba)
+// =========
+// Database 
+// =========
+
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    db.Database.Migrate();
+}
+
 await DbSeeder.SeedAsync(app.Services);
 
 app.Run();
