@@ -17,10 +17,10 @@ public class LessonServiceTests
         var course = await TestSeed.CreateCourseAsync(db, "Order unique");
         var service = new LessonService(db);
 
-        _ = await service.CreateAsync(course.Id, new CreateLessonRequest("Lesson A", 1));
+        _ = await service.CreateAsync(course.Id, new CreateLessonRequest("Lesson A", 1, "test lesson A"));
 
         Func<Task> act = async () =>
-            await service.CreateAsync(course.Id, new CreateLessonRequest("Lesson B", 1));
+            await service.CreateAsync(course.Id, new CreateLessonRequest("Lesson B", 1, "test lesson B"));
 
         await act.Should().ThrowAsync<InvalidOperationException>()
             .WithMessage("*unique within the course*");
@@ -35,8 +35,8 @@ public class LessonServiceTests
         var course = await TestSeed.CreateCourseAsync(db, "Reorder course");
         var service = new LessonService(db);
 
-        var l1Id = await service.CreateAsync(course.Id, new CreateLessonRequest("L1", 1));
-        var l2Id = await service.CreateAsync(course.Id, new CreateLessonRequest("L2", 2));
+        var l1Id = await service.CreateAsync(course.Id, new CreateLessonRequest("L1", 1,"test lesson A"));
+        var l2Id = await service.CreateAsync(course.Id, new CreateLessonRequest("L2", 2, "test lesson B" ));
 
       
         await service.MoveUpAsync(l2Id);

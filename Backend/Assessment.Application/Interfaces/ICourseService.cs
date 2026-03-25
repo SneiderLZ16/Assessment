@@ -5,18 +5,19 @@ namespace Assessment.Application.Services;
 
 public interface ICourseService
 {
-    Task PublishAsync(Guid courseId, CancellationToken ct = default);
-    Task UnpublishAsync(Guid courseId, CancellationToken ct = default);
-
+    Task PublishAsync(Guid courseId, Guid currentUserId, CancellationToken ct = default);
+    Task UnpublishAsync(Guid courseId, Guid currentUserId, CancellationToken ct = default);
     Task<PagedResult<CourseListItemDto>> SearchAsync(
+        Guid currentUserId,
         CourseStatus? status,
         int page,
         int pageSize,
         CancellationToken ct = default);
 
-    Task<CourseSummaryDto> GetSummaryAsync(Guid courseId, CancellationToken ct = default);
-    Task<Guid> CreateAsync(CreateCourseRequest request, CancellationToken ct = default);
-    Task SoftDeleteAsync(Guid courseId, CancellationToken ct = default);
-    Task UpdateAsync(Guid courseId, UpdateCourseRequest request, CancellationToken ct = default);
-
+    
+    Task<Guid> CreateAsync(CreateCourseRequest request, Guid currentUserId, CancellationToken ct = default);
+    Task<CourseSummaryDto> GetSummaryAsync(Guid courseId, Guid currentUserId, CancellationToken ct = default);
+    Task SoftDeleteAsync(Guid courseId, Guid currentUserId, CancellationToken ct = default);
+    Task UpdateAsync(Guid courseId, Guid currentUserId, UpdateCourseRequest request, CancellationToken ct = default);
+    
 }

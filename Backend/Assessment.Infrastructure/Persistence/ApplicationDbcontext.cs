@@ -29,7 +29,8 @@ public class ApplicationDbContext
             entity.Property(x => x.Title)
                 .IsRequired()
                 .HasMaxLength(200);
-
+            
+            
             entity.Property(x => x.Status)
                 .IsRequired();
 
@@ -50,6 +51,10 @@ public class ApplicationDbContext
                 .IsRequired()
                 .HasMaxLength(200);
 
+            entity.Property(x =>x.Description)
+                .IsRequired()
+                .HasMaxLength(500);
+            
             entity.Property(x => x.Order)
                 .IsRequired();
 

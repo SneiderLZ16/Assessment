@@ -1,3 +1,3 @@
 namespace Assessment.Application.DTOs;
 
-public record CreateCourseRequest(string Title);
+public record CreateCourseRequest(string Title,  string Description);

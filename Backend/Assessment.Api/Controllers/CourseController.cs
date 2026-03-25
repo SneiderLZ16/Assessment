@@ -3,6 +3,7 @@ using Assessment.Application.Services;
 using Assessment.Domain.Enum;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace Assessment.Api.Controllers;
 
@@ -13,6 +14,12 @@ public class CoursesController : ControllerBase
 {
     private readonly ICourseService _courseService;
 
+    private bool TryGetCurrentUserId(out Guid currentUserId)
+    {
+        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        return Guid.TryParse(userIdValue, out currentUserId);
+    }
+    
     public CoursesController(ICourseService courseService)
     {
         _courseService = courseService;
@@ -23,12 +30,19 @@ public class CoursesController : ControllerBase
     {
         try
         {
-            await _courseService.PublishAsync(id, ct);
+            if (!TryGetCurrentUserId(out var currentUserId))
+                return Unauthorized(new { message = "Invalid user token." });
+
+            await _courseService.PublishAsync(id, currentUserId, ct);
             return NoContent();
         }
         catch (KeyNotFoundException ex)
         {
             return NotFound(new { message = ex.Message });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
         }
         catch (InvalidOperationException ex)
         {
@@ -41,13 +55,19 @@ public class CoursesController : ControllerBase
     {
         try
         {
-            await _courseService.UnpublishAsync(id, ct);
+            if (!TryGetCurrentUserId(out var currentUserId))
+                return Unauthorized(new { message = "Invalid user token." });
+
+            await _courseService.UnpublishAsync(id, currentUserId, ct);
             return NoContent();
         }
         catch (KeyNotFoundException ex)
         {
             return NotFound(new { message = ex.Message });
         }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });        }
     }
 
     [HttpGet("search")]
@@ -57,7 +77,12 @@ public class CoursesController : ControllerBase
         [FromQuery] int pageSize = 10,
         CancellationToken ct = default)
     {
-        var result = await _courseService.SearchAsync(status, page, pageSize, ct);
+        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrWhiteSpace(userIdValue) || !Guid.TryParse(userIdValue, out var currentUserId))
+            return Unauthorized(new { message = "Invalid user token." });
+
+        var result = await _courseService.SearchAsync(currentUserId, status, page, pageSize, ct);
         return Ok(result);
     }
 
@@ -66,13 +91,19 @@ public class CoursesController : ControllerBase
     {
         try
         {
-            var summary = await _courseService.GetSummaryAsync(id, ct);
+            if (!TryGetCurrentUserId(out var currentUserId))
+                return Unauthorized(new { message = "Invalid user token." });
+
+            var summary = await _courseService.GetSummaryAsync(id, currentUserId, ct);
             return Ok(summary);
         }
         catch (KeyNotFoundException ex)
         {
             return NotFound(new { message = ex.Message });
         }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });        }
     }
     
     [HttpPost]
@@ -80,7 +111,12 @@ public class CoursesController : ControllerBase
     {
         try
         {
-            var id = await _courseService.CreateAsync(request, ct);
+            var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (string.IsNullOrWhiteSpace(userIdValue) || !Guid.TryParse(userIdValue, out var currentUserId))
+                return Unauthorized(new { message = "Invalid user token." });
+
+            var id = await _courseService.CreateAsync(request, currentUserId, ct);
             return CreatedAtAction(nameof(Summary), new { id }, new { id });
         }
         catch (InvalidOperationException ex)
@@ -88,19 +124,24 @@ public class CoursesController : ControllerBase
             return BadRequest(new { message = ex.Message });
         }
     }
-
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> SoftDelete(Guid id, CancellationToken ct)
     {
         try
         {
-            await _courseService.SoftDeleteAsync(id, ct);
+            if (!TryGetCurrentUserId(out var currentUserId))
+                return Unauthorized(new { message = "Invalid user token." });
+
+            await _courseService.SoftDeleteAsync(id, currentUserId, ct);
             return NoContent();
         }
         catch (KeyNotFoundException ex)
         {
             return NotFound(new { message = ex.Message });
         }
+        catch (UnauthorizedAccessException ex )
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });        }
     }
 
     
@@ -109,13 +150,19 @@ public class CoursesController : ControllerBase
     {
         try
         {
-            await _courseService.UpdateAsync(id, request, ct);
+            if (!TryGetCurrentUserId(out var currentUserId))
+                return Unauthorized(new { message = "Invalid user token." });
+
+            await _courseService.UpdateAsync(id, currentUserId, request, ct);
             return NoContent();
         }
         catch (KeyNotFoundException ex)
         {
             return NotFound(new { message = ex.Message });
         }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });        }
         catch (InvalidOperationException ex)
         {
             return BadRequest(new { message = ex.Message });

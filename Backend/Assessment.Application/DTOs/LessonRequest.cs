@@ -1,3 +1,3 @@
 namespace Assessment.Application.DTOs;
 
-public record CreateLessonRequest(string Title, int Order);
+public record CreateLessonRequest(string Title, int Order, string Description);

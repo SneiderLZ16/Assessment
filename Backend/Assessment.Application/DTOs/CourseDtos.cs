@@ -4,16 +4,17 @@ namespace Assessment.Application.DTOs;
 
 public record CourseListItemDto(
     Guid Id,
+    string cTitle,
     string Title,
     CourseStatus Status,
     DateTime CreatedAt,
     DateTime UpdatedAt,
-    int TotalLessons
-);
+    int TotalLessons);
 
 public record CourseSummaryDto(
     Guid Id,
     string Title,
+    string Description,
     CourseStatus Status,
     int TotalLessons,
     DateTime LastModification

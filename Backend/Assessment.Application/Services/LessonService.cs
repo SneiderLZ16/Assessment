@@ -18,6 +18,9 @@ public class LessonService : ILessonService
     {
         if (string.IsNullOrWhiteSpace(request.Title))
             throw new InvalidOperationException("Title is required.");
+        
+        if (string.IsNullOrWhiteSpace(request.Description))
+            throw new InvalidOperationException("Description is required.");
 
         if (request.Order <= 0)
             throw new InvalidOperationException("Order must be greater than 0.");
@@ -37,6 +40,7 @@ public class LessonService : ILessonService
             Id = Guid.NewGuid(),
             CourseId = courseId,
             Title = request.Title.Trim(),
+            Description = request.Description.Trim(),
             Order = request.Order,
             IsDeleted = false,
             CreatedAt = DateTime.UtcNow,
@@ -144,6 +148,7 @@ public class LessonService : ILessonService
                 l.Id,
                 l.CourseId,
                 l.Title,
+                l.Description,
                 l.Order,
                 l.CreatedAt,
                 l.UpdatedAt

@@ -10,3 +10,15 @@
 /home/sneiderlz16/Escritorio/Assessment/Backend/Assessment.Domain/obj/Debug/net8.0/refint/Assessment.Domain.dll
 /home/sneiderlz16/Escritorio/Assessment/Backend/Assessment.Domain/obj/Debug/net8.0/Assessment.Domain.pdb
 /home/sneiderlz16/Escritorio/Assessment/Backend/Assessment.Domain/obj/Debug/net8.0/ref/Assessment.Domain.dll
+C:\Users\User\OneDrive\Desktop\Assessment\Backend\Assessment.Domain\bin\Debug\net8.0\Assessment.Domain.deps.json
+C:\Users\User\OneDrive\Desktop\Assessment\Backend\Assessment.Domain\bin\Debug\net8.0\Assessment.Domain.dll
+C:\Users\User\OneDrive\Desktop\Assessment\Backend\Assessment.Domain\bin\Debug\net8.0\Assessment.Domain.pdb
+C:\Users\User\OneDrive\Desktop\Assessment\Backend\Assessment.Domain\obj\Debug\net8.0\Assessment.Domain.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\User\OneDrive\Desktop\Assessment\Backend\Assessment.Domain\obj\Debug\net8.0\Assessment.Domain.AssemblyInfoInputs.cache
+C:\Users\User\OneDrive\Desktop\Assessment\Backend\Assessment.Domain\obj\Debug\net8.0\Assessment.Domain.AssemblyInfo.cs
+C:\Users\User\OneDrive\Desktop\Assessment\Backend\Assessment.Domain\obj\Debug\net8.0\Assessment.Domain.csproj.CoreCompileInputs.cache
+C:\Users\User\OneDrive\Desktop\Assessment\Backend\Assessment.Domain\obj\Debug\net8.0\Assessment.Domain.sourcelink.json
+C:\Users\User\OneDrive\Desktop\Assessment\Backend\Assessment.Domain\obj\Debug\net8.0\Assessment.Domain.dll
+C:\Users\User\OneDrive\Desktop\Assessment\Backend\Assessment.Domain\obj\Debug\net8.0\refint\Assessment.Domain.dll
+C:\Users\User\OneDrive\Desktop\Assessment\Backend\Assessment.Domain\obj\Debug\net8.0\Assessment.Domain.pdb
+C:\Users\User\OneDrive\Desktop\Assessment\Backend\Assessment.Domain\obj\Debug\net8.0\ref\Assessment.Domain.dll
