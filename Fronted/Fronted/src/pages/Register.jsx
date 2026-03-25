@@ -2,6 +2,18 @@ import { useState } from "react";
 import api from "../api";
 import { setToken } from "../auth";
 
+function Notice({ type = "info", message, onClose }) {
+  if (!message) return null;
+  return (
+    <div className={`notice notice-${type}`}>
+      <p>{message}</p>
+      <button onClick={onClose} type="button" aria-label="Close notice">
+        ✕
+      </button>
+    </div>
+  );
+}
+
 export default function Register({ onRegistered, onGoLogin }) {
   const [name, setName] = useState("");
   const [lastname, setLastname] = useState("");
@@ -9,14 +21,15 @@ export default function Register({ onRegistered, onGoLogin }) {
   const [password, setPassword] = useState("Test123!");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
     setSuccess("");
+    setLoading(true);
 
     try {
-    
       const res = await api.post("/api/auth/register", {
         name: name.trim(),
         lastname: lastname.trim(),
@@ -24,129 +37,95 @@ export default function Register({ onRegistered, onGoLogin }) {
         password,
       });
 
-      
       if (res?.data?.token) {
         setToken(res.data.token);
         onRegistered();
         return;
       }
 
-      
-      setSuccess("User created. Please login.");
+      setSuccess("User created successfully. Redirecting to login...");
       setTimeout(() => onGoLogin(), 700);
     } catch (err) {
       setError(err?.response?.data?.message || "Register failed");
+    } finally {
+      setLoading(false);
     }
   }
 
   return (
-    <div style={styles.center}>
-      <div style={styles.card}>
-        <h2 style={{ marginTop: 0 }}>Register</h2>
+    <div className="auth-layout fade-in">
+      <div
+        className="glass-card hero-card slide-up"
+        style={{ width: "min(560px, 100%)" }}
+      >
+        <div className="auth-badge">✨ New account</div>
+        <h1 className="auth-heading">Create your workspace</h1>
+        <p className="auth-copy">
+          Start building courses with a more polished experience, clearer
+          actions and instant feedback.
+        </p>
 
-        <form onSubmit={handleSubmit} style={{ display: "grid", gap: 10 }}>
-          <div style={styles.row}>
+        <form
+          className="form-stack"
+          style={{ marginTop: 24 }}
+          onSubmit={handleSubmit}
+        >
+          <div className="grid-2">
             <input
-              style={styles.input}
+              className="input"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Name"
+              placeholder="First name"
             />
             <input
-              style={styles.input}
+              className="input"
               value={lastname}
               onChange={(e) => setLastname(e.target.value)}
-              placeholder="Lastname"
+              placeholder="Last name"
             />
           </div>
 
           <input
-            style={styles.input}
+            className="input"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Email"
           />
 
           <input
-            style={styles.input}
+            className="input"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Password"
           />
 
-          <button style={styles.button} type="submit">
-            Create account
-          </button>
+          <Notice type="error" message={error} onClose={() => setError("")} />
+          <Notice
+            type="success"
+            message={success}
+            onClose={() => setSuccess("")}
+          />
 
-          {error && <div style={styles.error}>{error}</div>}
-          {success && <div style={styles.success}>{success}</div>}
+          <button className="btn" type="submit" disabled={loading}>
+            {loading ? "Creating account..." : "Create account"}
+          </button>
         </form>
 
-        <button style={styles.linkBtn} onClick={onGoLogin} type="button">
-          Already have an account? Login
-        </button>
+        <div
+          className="row-wrap"
+          style={{ justifyContent: "space-between", marginTop: 16 }}
+        >
+          <span className="helper-text">Already have an account?</span>
+          <button
+            className="btn-ghost btn-sm"
+            onClick={onGoLogin}
+            type="button"
+          >
+            Back to login
+          </button>
+        </div>
       </div>
     </div>
   );
 }
-
-const styles = {
-  center: {
-    minHeight: "100vh",
-    display: "grid",
-    placeItems: "center",
-    background: "#0b1220",
-    color: "#e6eefc",
-    padding: 20,
-  },
-  card: {
-    width: "min(460px, 100%)",
-    background: "#121a2b",
-    border: "1px solid #25324a",
-    borderRadius: 12,
-    padding: 16,
-  },
-  row: { display: "flex", gap: 8 },
-  input: {
-    flex: 1,
-    padding: 10,
-    borderRadius: 10,
-    border: "1px solid #25324a",
-    background: "#0f1726",
-    color: "#e6eefc",
-    outline: "none",
-  },
-  button: {
-    padding: 10,
-    borderRadius: 10,
-    border: "1px solid #2c3f66",
-    background: "#1e2b44",
-    color: "#e6eefc",
-    cursor: "pointer",
-  },
-  linkBtn: {
-    marginTop: 10,
-    width: "100%",
-    padding: 10,
-    borderRadius: 10,
-    border: "1px solid #25324a",
-    background: "transparent",
-    color: "#a9c2ff",
-    cursor: "pointer",
-  },
-  error: {
-    padding: 10,
-    borderRadius: 10,
-    background: "#2b1620",
-    border: "1px solid #6b2b3c",
-    color: "#ffd1dc",
-  },
-  success: {
-    padding: 10,
-    borderRadius: 10,
-    background: "#122b1c",
-    border: "1px solid #2b6b3c",
-    color: "#d1ffe0",
-  },
-};

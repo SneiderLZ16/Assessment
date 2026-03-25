@@ -2,14 +2,28 @@ import { useState } from "react";
 import api from "../api";
 import { setToken } from "../auth";
 
+function Notice({ type = "error", message, onClose }) {
+  if (!message) return null;
+  return (
+    <div className={`notice notice-${type}`}>
+      <p>{message}</p>
+      <button onClick={onClose} type="button" aria-label="Close notice">
+        ✕
+      </button>
+    </div>
+  );
+}
+
 export default function Login({ onLoggedIn, onGoRegister }) {
   const [email, setEmail] = useState("test@demo.com");
   const [password, setPassword] = useState("Test123!");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
+    setLoading(true);
 
     try {
       const res = await api.post("/api/auth/login", { email, password });
@@ -17,95 +31,64 @@ export default function Login({ onLoggedIn, onGoRegister }) {
       onLoggedIn();
     } catch (err) {
       setError(err?.response?.data?.message || "Login failed");
+    } finally {
+      setLoading(false);
     }
   }
 
   return (
-    <div style={styles.center}>
-      <div style={styles.card}>
-        <h2 style={{ marginTop: 0 }}>Login</h2>
+    <div className="auth-layout fade-in">
+      <div className="glass-card hero-card slide-up">
+        <div className="auth-badge">⚡ Assessment Platform</div>
+        <h1 className="auth-heading">Welcome back</h1>
+        <p className="auth-copy">
+          Sign in to manage courses, lessons and publication states with a
+          cleaner, faster workspace.
+        </p>
 
-        <form onSubmit={handleSubmit} style={{ display: "grid", gap: 10 }}>
+        <form
+          className="form-stack"
+          style={{ marginTop: 24 }}
+          onSubmit={handleSubmit}
+        >
           <input
-            style={styles.input}
+            className="input"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Email"
           />
           <input
-            style={styles.input}
+            className="input"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Password"
           />
 
-          <button style={styles.button} type="submit">
-            Sign in
-          </button>
+          <Notice type="error" message={error} onClose={() => setError("")} />
 
-          {error && <div style={styles.error}>{error}</div>}
+          <button className="btn" type="submit" disabled={loading}>
+            {loading ? "Signing in..." : "Sign in"}
+          </button>
         </form>
 
-        <button style={styles.linkBtn} onClick={onGoRegister} type="button">
-          Create account
-        </button>
-
-        <p style={{ fontSize: 12, opacity: 0.7 }}>
-          Seed: <b>test@demo.com</b> / <b>Test123!</b>
-        </p>
+        <div
+          className="row-wrap"
+          style={{ justifyContent: "space-between", marginTop: 16 }}
+        >
+          <span className="helper-text">
+            Demo user: <strong>test@demo.com</strong> /{" "}
+            <strong>Test123!</strong>
+          </span>
+          <button
+            className="btn-ghost btn-sm"
+            onClick={onGoRegister}
+            type="button"
+          >
+            Create account
+          </button>
+        </div>
       </div>
     </div>
   );
 }
-
-const styles = {
-  center: {
-    minHeight: "100vh",
-    display: "grid",
-    placeItems: "center",
-    background: "#0b1220",
-    color: "#e6eefc",
-    padding: 20,
-  },
-  card: {
-    width: "min(420px, 100%)",
-    background: "#121a2b",
-    border: "1px solid #25324a",
-    borderRadius: 12,
-    padding: 16,
-  },
-  input: {
-    padding: 10,
-    borderRadius: 10,
-    border: "1px solid #25324a",
-    background: "#0f1726",
-    color: "#e6eefc",
-    outline: "none",
-  },
-  button: {
-    padding: 10,
-    borderRadius: 10,
-    border: "1px solid #2c3f66",
-    background: "#1e2b44",
-    color: "#e6eefc",
-    cursor: "pointer",
-  },
-  linkBtn: {
-    marginTop: 10,
-    width: "100%",
-    padding: 10,
-    borderRadius: 10,
-    border: "1px solid #25324a",
-    background: "transparent",
-    color: "#a9c2ff",
-    cursor: "pointer",
-  },
-  error: {
-    padding: 10,
-    borderRadius: 10,
-    background: "#2b1620",
-    border: "1px solid #6b2b3c",
-    color: "#ffd1dc",
-  },
-};

@@ -1,48 +1,91 @@
 import { useEffect, useMemo, useState } from "react";
 import api from "../api";
 
-
 function isDraftStatus(status) {
   if (typeof status === "number") return status === 0;
   if (typeof status === "string") return status.toLowerCase() === "draft";
   return false;
 }
 
+function Notice({ type = "info", message, onClose }) {
+  if (!message) return null;
+  return (
+    <div className={`notice notice-${type}`}>
+      <p>{message}</p>
+      <button type="button" onClick={onClose} aria-label="Close notice">
+        ✕
+      </button>
+    </div>
+  );
+}
+
+function MetricCard({ label, value, hint }) {
+  return (
+    <div className="metric-card">
+      <div className="metric-label">{label}</div>
+      <div className="metric-value">{value}</div>
+      <div className="helper-text" style={{ marginTop: 4 }}>
+        {hint}
+      </div>
+    </div>
+  );
+}
+
 export default function Courses({ onOpenCourse, onLogout }) {
   const [q, setQ] = useState("");
-  const [status, setStatus] = useState(""); 
+  const [status, setStatus] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-
   const [newTitle, setNewTitle] = useState("");
-
   const [items, setItems] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
-
   const [loading, setLoading] = useState(false);
+  const [busyId, setBusyId] = useState(null);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
-  const totalPages = useMemo(() => {
-    const pages = Math.ceil(totalCount / pageSize);
-    return pages <= 0 ? 1 : pages;
-  }, [totalCount, pageSize]);
+  const totalPages = useMemo(
+    () => Math.max(1, Math.ceil(totalCount / pageSize)),
+    [totalCount, pageSize],
+  );
+
+  const draftCount = useMemo(
+    () => items.filter((item) => isDraftStatus(item.status)).length,
+    [items],
+  );
+
+  const publishedCount = useMemo(
+    () => items.filter((item) => !isDraftStatus(item.status)).length,
+    [items],
+  );
 
   async function loadCourses() {
     setLoading(true);
     setError("");
+
     try {
-      const params = new URLSearchParams();
-      if (q.trim()) params.set("q", q.trim());
+      const params = { page, pageSize };
+      if (status) params.status = status;
 
-     
-      if (status) params.set("status", status);
+      const res = await api.get("/api/courses/search", { params });
+      const raw = res.data;
+      const normalized = Array.isArray(raw)
+        ? { items: raw, totalCount: raw.length }
+        : {
+            items: raw.items ?? [],
+            totalCount: raw.totalCount ?? 0,
+          };
 
-      params.set("page", String(page));
-      params.set("pageSize", String(pageSize));
+      let nextItems = normalized.items;
+      if (q.trim()) {
+        const term = q.trim().toLowerCase();
+        nextItems = nextItems.filter((course) =>
+          course.title?.toLowerCase().includes(term),
+        );
+      }
 
-      const res = await api.get(`/api/courses/search?${params.toString()}`);
-      setItems(res.data.items || []);
-      setTotalCount(res.data.totalCount || 0);
+      setItems(nextItems);
+      setTotalCount(normalized.totalCount);
     } catch (err) {
       setError(err?.response?.data?.message || "Failed to load courses");
     } finally {
@@ -52,181 +95,274 @@ export default function Courses({ onOpenCourse, onLogout }) {
 
   async function createCourse() {
     setError("");
-    if (!newTitle.trim()) return setError("Title is required");
+    setSuccess("");
+    if (!newTitle.trim()) return setError("Course title is required");
+    
+    if(!newDescription.trim()) return setError("Course description is required");
 
     try {
-      await api.post("/api/courses", { title: newTitle.trim() });
+      await api.post("/api/courses", { title: newTitle.trim(), description: newDescription.trim() });
       setNewTitle("");
-      setPage(1);
+      setNewDescription("");
+      setSuccess("Course created successfully.");
       await loadCourses();
     } catch (err) {
       setError(err?.response?.data?.message || "Failed to create course");
     }
   }
 
-  async function updateCourse(courseId, title) {
+  async function publish(id) {
+    setBusyId(id);
     setError("");
+    setSuccess("");
     try {
-      await api.put(`/api/courses/${courseId}`, { title });
+      await api.patch(`/api/courses/${id}/publish`);
+      setSuccess("Course published.");
       await loadCourses();
     } catch (err) {
-      setError(err?.response?.data?.message || "Failed to update course");
+      setError(err?.response?.data?.message || "Failed to publish course");
+    } finally {
+      setBusyId(null);
     }
   }
 
-  async function deleteCourse(courseId) {
+  async function unpublish(id) {
+    setBusyId(id);
     setError("");
+    setSuccess("");
     try {
-      await api.delete(`/api/courses/${courseId}`);
+      await api.patch(`/api/courses/${id}/unpublish`);
+      setSuccess("Course moved back to draft.");
+      await loadCourses();
+    } catch (err) {
+      setError(err?.response?.data?.message || "Failed to unpublish course");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function deleteCourse(id) {
+    setBusyId(id);
+    setError("");
+    setSuccess("");
+    try {
+      await api.delete(`/api/courses/${id}`);
+      setSuccess("Course removed successfully.");
       await loadCourses();
     } catch (err) {
       setError(err?.response?.data?.message || "Failed to delete course");
+    } finally {
+      setBusyId(null);
     }
   }
 
-  async function publish(courseId) {
+  async function renameCourse(id, title) {
+    setBusyId(id);
     setError("");
+    setSuccess("");
     try {
-      await api.patch(`/api/courses/${courseId}/publish`);
+      await api.put(`/api/courses/${id}`, { title });
+      setSuccess("Course updated.");
       await loadCourses();
     } catch (err) {
-      setError(err?.response?.data?.message || "Publish failed");
-    }
-  }
-
-  async function unpublish(courseId) {
-    setError("");
-    try {
-      await api.patch(`/api/courses/${courseId}/unpublish`);
-      await loadCourses();
-    } catch (err) {
-      setError(err?.response?.data?.message || "Unpublish failed");
+      setError(err?.response?.data?.message || "Failed to update course");
+    } finally {
+      setBusyId(null);
     }
   }
 
   useEffect(() => {
     loadCourses();
-    
-  }, [page, pageSize]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, pageSize, status]);
 
   return (
-    <div style={styles.page}>
-      <header style={styles.header}>
-        <div>
-          <div style={{ fontWeight: 800 }}>Courses</div>
-          <div style={{ fontSize: 12, opacity: 0.7 }}>
-            Draft ↔ Published (enum-safe)
+    <div className="app-shell fade-in">
+      <div className="dashboard-shell">
+        <header className="page-header">
+          <div>
+            <div className="auth-badge">🚀 Professional workspace</div>
+            <h1 className="page-title">Course management dashboard</h1>
+            <div className="page-subtitle">
+              Create, refine and publish learning content with better visibility
+              and smoother controls.
+            </div>
           </div>
-        </div>
-        <button style={styles.btn} onClick={onLogout}>
-          Logout
-        </button>
-      </header>
 
-      {error && <div style={styles.error}>{error}</div>}
+          <div className="row-wrap">
+            <div className="badge">
+              Page {page} / {totalPages}
+            </div>
+            <button className="btn-secondary" onClick={onLogout}>
+              Logout
+            </button>
+          </div>
+        </header>
 
-      <section style={styles.card}>
-        <div style={styles.row}>
-          <input
-            style={styles.input}
-            placeholder="Search (q)..."
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
+        <section className="metric-grid slide-up">
+          <MetricCard
+            label="Visible courses"
+            value={totalCount}
+            hint="Results returned by current query"
           />
-
-          <select
-            style={styles.input}
-            value={status}
-            onChange={(e) => {
-              setStatus(e.target.value);
-              setPage(1);
-            }}
-          >
-            <option value="">All</option>
-            <option value="Draft">Draft</option>
-            <option value="Published">Published</option>
-          </select>
-
-          <button
-            style={styles.btn}
-            onClick={() => {
-              setPage(1);
-              loadCourses();
-            }}
-          >
-            Search
-          </button>
-        </div>
-
-        <div style={{ ...styles.row, marginTop: 10 }}>
-          <input
-            style={styles.input}
-            placeholder="New course title..."
-            value={newTitle}
-            onChange={(e) => setNewTitle(e.target.value)}
+          <MetricCard
+            label="Drafts in page"
+            value={draftCount}
+            hint="Still private and editable"
           />
-          <button style={styles.btn} onClick={createCourse}>
-            Create
-          </button>
-        </div>
+          <MetricCard
+            label="Published in page"
+            value={publishedCount}
+            hint="Ready to be consumed"
+          />
+        </section>
 
-        <div style={{ marginTop: 12 }}>
+        <section className="panel glass-card slide-up">
+          <div className="grid-2 dashboard-top-grid">
+            <div className="form-stack">
+              <div>
+                <h3 style={{ margin: 0 }}>Explore courses</h3>
+                <div className="helper-text" style={{ marginTop: 6 }}>
+                  Search faster and filter by publication status.
+                </div>
+              </div>
+
+              <div className="row-wrap">
+                <input
+                  className="input"
+                  placeholder="Search courses..."
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                />
+                <select
+                  className="select"
+                  value={status}
+                  onChange={(e) => {
+                    setStatus(e.target.value);
+                    setPage(1);
+                  }}
+                  style={{ maxWidth: 200 }}
+                >
+                  <option value="">All statuses</option>
+                  <option value="Draft">Draft</option>
+                  <option value="Published">Published</option>
+                </select>
+                <button
+                  className="btn"
+                  onClick={() => {
+                    setPage(1);
+                    loadCourses();
+                  }}
+                >
+                  Search
+                </button>
+              </div>
+            </div>
+
+            <div className="form-stack">
+              <div>
+                <h3 style={{ margin: 0 }}>Create a new course</h3>
+                <div className="helper-text" style={{ marginTop: 6 }}>
+                  Drafts stay editable until you decide to publish.
+                </div>
+              </div>
+
+              <div className="row-wrap">
+                <input
+                  className="input"
+                  placeholder="New course title..."
+                  value={newTitle}
+                  onChange={(e) => setNewTitle(e.target.value)}
+                />
+                <button className="btn" onClick={createCourse}>
+                  Create
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ marginTop: 18 }}>
+            <Notice type="error" message={error} onClose={() => setError("")} />
+            <Notice
+              type="success"
+              message={success}
+              onClose={() => setSuccess("")}
+            />
+          </div>
+        </section>
+
+        <section className="panel glass-card slide-up">
+          <div className="page-header" style={{ marginBottom: 16 }}>
+            <div>
+              <h3 style={{ margin: 0 }}>Your courses</h3>
+              <div className="helper-text" style={{ marginTop: 6 }}>
+                Open details, rename courses, publish drafts or remove outdated
+                content.
+              </div>
+            </div>
+            <div className="badge">Total records: {totalCount}</div>
+          </div>
+
           {loading ? (
-            <div style={{ opacity: 0.7 }}>Loading...</div>
+            <div className="empty-state">Loading courses...</div>
           ) : items.length === 0 ? (
-            <div style={{ opacity: 0.7 }}>No courses found</div>
+            <div className="empty-state">
+              No courses found with the current filters.
+            </div>
           ) : (
-            <div style={{ display: "grid", gap: 10 }}>
-              {items.map((c) => (
+            <div className="list-grid">
+              {items.map((course) => (
                 <CourseItem
-                  key={c.id}
-                  course={c}
-                  onOpen={() => onOpenCourse(c.id)}
-                  onPublish={() => publish(c.id)}
-                  onUnpublish={() => unpublish(c.id)}
-                  onDelete={() => deleteCourse(c.id)}
-                  onRename={(t) => updateCourse(c.id, t)}
+                  key={course.id}
+                  course={course}
+                  onOpen={() => onOpenCourse(course.id)}
+                  onPublish={() => publish(course.id)}
+                  onUnpublish={() => unpublish(course.id)}
+                  onDelete={() => deleteCourse(course.id)}
+                  onRename={(title) => renameCourse(course.id, title)}
+                  busy={busyId === course.id}
                 />
               ))}
             </div>
           )}
-        </div>
 
-        <div style={styles.pager}>
-          <button
-            style={styles.btnSmall}
-            disabled={page <= 1}
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-          >
-            Prev
-          </button>
+          <div className="pagination-bar">
+            <div className="row-wrap">
+              <button
+                className="btn-ghost btn-sm"
+                disabled={page <= 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+              >
+                Previous
+              </button>
+              <button
+                className="btn-ghost btn-sm"
+                disabled={page >= totalPages}
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              >
+                Next
+              </button>
+            </div>
 
-          <div style={{ fontSize: 12, opacity: 0.8 }}>
-            Page {page} / {totalPages} — Total {totalCount}
+            <div className="row-wrap">
+              <span className="helper-text">Rows per page</span>
+              <select
+                className="select"
+                style={{ width: 100 }}
+                value={pageSize}
+                onChange={(e) => {
+                  setPageSize(Number(e.target.value));
+                  setPage(1);
+                }}
+              >
+                <option value={5}>5</option>
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+              </select>
+            </div>
           </div>
-
-          <button
-            style={styles.btnSmall}
-            disabled={page >= totalPages}
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-          >
-            Next
-          </button>
-
-          <select
-            style={styles.inputSmall}
-            value={pageSize}
-            onChange={(e) => {
-              setPageSize(Number(e.target.value));
-              setPage(1);
-            }}
-          >
-            <option value={5}>5</option>
-            <option value={10}>10</option>
-            <option value={20}>20</option>
-          </select>
-        </div>
-      </section>
+        </section>
+      </div>
     </div>
   );
 }
@@ -238,190 +374,120 @@ function CourseItem({
   onUnpublish,
   onDelete,
   onRename,
+  busy,
 }) {
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(course.title);
 
-  useEffect(() => setTitle(course.title), [course.title]);
+  useEffect(() => {
+    setTitle(course.title);
+  }, [course.title]);
 
-  async function save() {
-    const t = title.trim();
-    if (!t) return;
-    await onRename(t);
+  const draft = isDraftStatus(course.status);
+
+  async function handleSave() {
+    const next = title.trim();
+    if (!next) return;
+    await onRename(next);
     setEditing(false);
   }
 
-  const isDraft = isDraftStatus(course.status);
-
   return (
-    <div style={styles.item}>
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
+    <div className="course-card">
+      <div className="card-top">
         <div style={{ flex: 1 }}>
           {editing ? (
             <input
-              style={styles.input}
+              className="input"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && save()}
+              placeholder="Course title"
             />
           ) : (
-            <div style={{ fontWeight: 800 }}>
-              {course.title}{" "}
-              <span style={{ fontSize: 12, opacity: 0.7 }}>
-                ({isDraft ? "Draft" : "Published"})
-              </span>
-            </div>
-          )}
-
-          <div style={{ fontSize: 12, opacity: 0.7 }}>
-            Lessons: {course.totalLessons}
-          </div>
-        </div>
-
-        <div
-          style={{
-            display: "flex",
-            gap: 6,
-            flexWrap: "wrap",
-            justifyContent: "flex-end",
-          }}
-        >
-          <button style={styles.btnSmall} onClick={onOpen}>
-            Open
-          </button>
-
-          {isDraft ? (
-            <button style={styles.btnSmall} onClick={onPublish}>
-              Publish
-            </button>
-          ) : (
-            <button style={styles.btnSmall} onClick={onUnpublish}>
-              Unpublish
-            </button>
-          )}
-
-          {!editing ? (
-            <button style={styles.btnSmall} onClick={() => setEditing(true)}>
-              Edit
-            </button>
-          ) : (
             <>
-              <button style={styles.btnSmall} onClick={save}>
-                Save
-              </button>
-              <button
-                style={styles.btnSmall}
-                onClick={() => {
-                  setEditing(false);
-                  setTitle(course.title);
-                }}
-              >
-                Cancel
-              </button>
+              <h4 className="card-title">{course.title}</h4>
+              <div className="row-wrap" style={{ marginTop: 10 }}>
+                <span
+                  className={`badge ${draft ? "badge-warning" : "badge-success"}`}
+                >
+                  {draft ? "Draft" : "Published"}
+                </span>
+                <span className="helper-text">
+                  {course.totalLessons} lessons
+                </span>
+              </div>
             </>
           )}
-
-          <button style={styles.btnSmallDanger} onClick={onDelete}>
-            Delete
-          </button>
         </div>
+
+        <div className="helper-text">
+          Updated{" "}
+          {course.updatedAt
+            ? new Date(course.updatedAt).toLocaleDateString()
+            : "-"}
+        </div>
+      </div>
+
+      <div className="course-actions">
+        {editing ? (
+          <>
+            <button className="btn btn-sm" disabled={busy} onClick={handleSave}>
+              Save
+            </button>
+            <button
+              className="btn-ghost btn-sm"
+              disabled={busy}
+              onClick={() => {
+                setTitle(course.title);
+                setEditing(false);
+              }}
+            >
+              Cancel
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              className="btn-ghost btn-sm"
+              disabled={busy}
+              onClick={onOpen}
+            >
+              Open
+            </button>
+            <button
+              className="btn-ghost btn-sm"
+              disabled={busy}
+              onClick={() => setEditing(true)}
+            >
+              Rename
+            </button>
+            {draft ? (
+              <button
+                className="btn-success btn-sm"
+                disabled={busy}
+                onClick={onPublish}
+              >
+                Publish
+              </button>
+            ) : (
+              <button
+                className="btn-warning btn-sm"
+                disabled={busy}
+                onClick={onUnpublish}
+              >
+                Unpublish
+              </button>
+            )}
+            <button
+              className="btn-danger btn-sm"
+              disabled={busy}
+              onClick={onDelete}
+            >
+              Delete
+            </button>
+          </>
+        )}
       </div>
     </div>
   );
 }
-
-const styles = {
-  page: {
-    minHeight: "100vh",
-    background: "#0b1220",
-    color: "#e6eefc",
-    padding: 16,
-  },
-  header: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  card: {
-    background: "#121a2b",
-    border: "1px solid #25324a",
-    borderRadius: 12,
-    padding: 12,
-  },
-  row: {
-    display: "flex",
-    gap: 8,
-    alignItems: "center",
-    flexWrap: "wrap",
-  },
-  input: {
-    flex: 1,
-    minWidth: 180,
-    padding: 10,
-    borderRadius: 10,
-    border: "1px solid #25324a",
-    background: "#0f1726",
-    color: "#e6eefc",
-    outline: "none",
-  },
-  inputSmall: {
-    padding: "8px 10px",
-    borderRadius: 10,
-    border: "1px solid #25324a",
-    background: "#0f1726",
-    color: "#e6eefc",
-    outline: "none",
-  },
-  btn: {
-    padding: "10px 12px",
-    borderRadius: 10,
-    border: "1px solid #2c3f66",
-    background: "#1e2b44",
-    color: "#e6eefc",
-    cursor: "pointer",
-    whiteSpace: "nowrap",
-  },
-  btnSmall: {
-    padding: "8px 10px",
-    borderRadius: 10,
-    border: "1px solid #2c3f66",
-    background: "#1e2b44",
-    color: "#e6eefc",
-    cursor: "pointer",
-    whiteSpace: "nowrap",
-    fontSize: 12,
-  },
-  btnSmallDanger: {
-    padding: "8px 10px",
-    borderRadius: 10,
-    border: "1px solid #6b2b3c",
-    background: "#2b1620",
-    color: "#ffd1dc",
-    cursor: "pointer",
-    whiteSpace: "nowrap",
-    fontSize: 12,
-  },
-  item: {
-    padding: 10,
-    borderRadius: 12,
-    border: "1px solid #25324a",
-    background: "#0f1726",
-  },
-  pager: {
-    marginTop: 12,
-    display: "flex",
-    gap: 8,
-    alignItems: "center",
-    justifyContent: "space-between",
-    flexWrap: "wrap",
-  },
-  error: {
-    marginBottom: 10,
-    padding: 10,
-    borderRadius: 12,
-    background: "#2b1620",
-    border: "1px solid #6b2b3c",
-    color: "#ffd1dc",
-  },
-};

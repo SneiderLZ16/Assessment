@@ -1,12 +1,24 @@
 import { useEffect, useMemo, useState } from "react";
 import api from "../api";
 
+function Notice({ type = "info", message, onClose }) {
+  if (!message) return null;
+  return (
+    <div className={`notice notice-${type}`}>
+      <p>{message}</p>
+      <button type="button" onClick={onClose} aria-label="Close notice">
+        ✕
+      </button>
+    </div>
+  );
+}
+
 export default function CourseDetails({ courseId, onBack, onLogout }) {
   const [course, setCourse] = useState(null);
   const [lessons, setLessons] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
+  const [success, setSuccess] = useState("");
   const [lessonTitle, setLessonTitle] = useState("");
   const [lessonOrder, setLessonOrder] = useState(1);
 
@@ -31,24 +43,36 @@ export default function CourseDetails({ courseId, onBack, onLogout }) {
 
   async function createLesson() {
     setError("");
+    setSuccess("");
     if (!lessonTitle.trim()) return setError("Lesson title is required");
+
+    if(!lessonDescription.trim()) return setError("Lesson description is required");
 
     try {
       await api.post(`/api/courses/${courseId}/lessons`, {
         title: lessonTitle.trim(),
+        description: lessonDescription.trim(),
         order: Number(lessonOrder),
       });
       setLessonTitle("");
+      setLessonDescription("");
+      setSuccess("Lesson created.");
       await loadAll();
     } catch (err) {
       setError(err?.response?.data?.message || "Failed to create lesson");
     }
   }
 
-  async function updateLesson(lessonId, title, order) {
+  async function updateLesson(lessonId, title, lessondescription, order) {
     setError("");
+    setSuccess("");
     try {
-      await api.put(`/api/lessons/${lessonId}`, { title, order: Number(order) });
+      await api.put(`/api/lessons/${lessonId}`, {
+        title,
+        lessondescription,
+        order: Number(order),
+      });
+      setSuccess("Lesson updated.");
       await loadAll();
     } catch (err) {
       setError(err?.response?.data?.message || "Failed to update lesson");
@@ -57,8 +81,10 @@ export default function CourseDetails({ courseId, onBack, onLogout }) {
 
   async function deleteLesson(lessonId) {
     setError("");
+    setSuccess("");
     try {
       await api.delete(`/api/lessons/${lessonId}`);
+      setSuccess("Lesson deleted.");
       await loadAll();
     } catch (err) {
       setError(err?.response?.data?.message || "Failed to delete lesson");
@@ -67,8 +93,10 @@ export default function CourseDetails({ courseId, onBack, onLogout }) {
 
   async function moveUp(lessonId) {
     setError("");
+    setSuccess("");
     try {
       await api.patch(`/api/lessons/${lessonId}/move-up`);
+      setSuccess("Lesson moved up.");
       await loadAll();
     } catch (err) {
       setError(err?.response?.data?.message || "Move up failed");
@@ -77,8 +105,10 @@ export default function CourseDetails({ courseId, onBack, onLogout }) {
 
   async function moveDown(lessonId) {
     setError("");
+    setSuccess("");
     try {
       await api.patch(`/api/lessons/${lessonId}/move-down`);
+      setSuccess("Lesson moved down.");
       await loadAll();
     } catch (err) {
       setError(err?.response?.data?.message || "Move down failed");
@@ -87,87 +117,149 @@ export default function CourseDetails({ courseId, onBack, onLogout }) {
 
   useEffect(() => {
     loadAll();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [courseId]);
 
   return (
-    <div style={styles.page}>
-      <header style={styles.header}>
-        <div>
-          <div style={{ fontWeight: 800 }}>Course Details</div>
-          <div style={{ fontSize: 12, opacity: 0.7 }}>
-            Lessons CRUD + reorder (Up/Down)
+    <div className="app-shell fade-in">
+      <div className="dashboard-shell">
+        <header className="page-header">
+          <div>
+            <div className="auth-badge">🎓 Course details</div>
+            <h1 className="page-title">Lesson editor workspace</h1>
+            <div className="page-subtitle">
+              Manage lesson order, edits and content updates in a more focused
+              layout.
+            </div>
           </div>
-        </div>
+          <div className="row-wrap">
+            <button className="btn-ghost" onClick={onBack}>
+              Back
+            </button>
+            <button className="btn-secondary" onClick={onLogout}>
+              Logout
+            </button>
+          </div>
+        </header>
 
-        <div style={{ display: "flex", gap: 8 }}>
-          <button style={styles.btn} onClick={onBack}>Back</button>
-          <button style={styles.btn} onClick={onLogout}>Logout</button>
-        </div>
-      </header>
-
-      {error && <div style={styles.error}>{error}</div>}
-
-      <section style={styles.card}>
-        {loading ? (
-          <div style={{ opacity: 0.7 }}>Loading...</div>
-        ) : !course ? (
-          <div style={{ opacity: 0.7 }}>Course not found</div>
-        ) : (
-          <>
-            <div style={{ marginBottom: 12 }}>
-              <div style={{ fontWeight: 900, fontSize: 18 }}>{course.title}</div>
-              <div style={{ fontSize: 12, opacity: 0.7 }}>
-                Status: {course.status} — Lessons: {course.totalLessons}
+        {course && (
+          <section className="metric-grid panel glass-card slide-up">
+            <div className="metric-card">
+              <div className="metric-label">Course</div>
+              <div className="metric-value" style={{ fontSize: "1.25rem" }}>
+                {course.title}
               </div>
-              {course.lastModification && (
-                <div style={{ fontSize: 12, opacity: 0.7 }}>
-                  Last modification: {new Date(course.lastModification).toLocaleString()}
-                </div>
-              )}
+              <div className="helper-text" style={{ marginTop: 6 }}>
+                Main course summary
+              </div>
             </div>
-
-            <div style={styles.row}>
-              <input
-                style={styles.input}
-                placeholder="Lesson title..."
-                value={lessonTitle}
-                onChange={(e) => setLessonTitle(e.target.value)}
-              />
-
-              <input
-                style={styles.input}
-                type="number"
-                min={1}
-                placeholder={`Order (suggested ${nextOrder})`}
-                value={lessonOrder}
-                onChange={(e) => setLessonOrder(e.target.value)}
-              />
-
-              <button style={styles.btn} onClick={createLesson}>Add lesson</button>
+            <div className="metric-card">
+              <div className="metric-label">Status</div>
+              <div className="metric-value" style={{ fontSize: "1.25rem" }}>
+                {course.status}
+              </div>
+              <div className="helper-text" style={{ marginTop: 6 }}>
+                Publication state
+              </div>
             </div>
-
-            <div style={{ marginTop: 12 }}>
-              {lessons.length === 0 ? (
-                <div style={{ opacity: 0.7 }}>No lessons yet</div>
-              ) : (
-                <div style={{ display: "grid", gap: 10 }}>
-                  {lessons.map((l) => (
-                    <LessonRow
-                      key={l.id}
-                      lesson={l}
-                      onMoveUp={() => moveUp(l.id)}
-                      onMoveDown={() => moveDown(l.id)}
-                      onDelete={() => deleteLesson(l.id)}
-                      onSave={(title, order) => updateLesson(l.id, title, order)}
-                    />
-                  ))}
-                </div>
-              )}
+            <div className="metric-card">
+              <div className="metric-label">Lessons</div>
+              <div className="metric-value">{course.totalLessons}</div>
+              <div className="helper-text" style={{ marginTop: 6 }}>
+                Last update{" "}
+                {course.lastModification
+                  ? new Date(course.lastModification).toLocaleString()
+                  : "-"}
+              </div>
             </div>
-          </>
+          </section>
         )}
-      </section>
+
+        <section className="panel glass-card slide-up">
+          <div className="page-header" style={{ marginBottom: 16 }}>
+            <div>
+              <h3 style={{ margin: 0 }}>Create lesson</h3>
+              <div className="helper-text" style={{ marginTop: 6 }}>
+                Add new content blocks and control the order from the start.
+              </div>
+            </div>
+            <div className="badge">Suggested order: {nextOrder}</div>
+          </div>
+
+          <div className="row-wrap">
+            <input
+              className="input"
+              placeholder="Lesson title..."
+              value={lessonTitle}
+              onChange={(e) => setLessonTitle(e.target.value)}
+            />
+             <input
+              className="input"
+              placeholder="Lesson description..."
+              value={lessonDescription}
+              onChange={(e) => setLessonDescription(e.target.value)}
+            />
+            <input
+              className="input"
+              type="number"
+              min={1}
+              style={{ maxWidth: 140 }}
+              value={lessonOrder}
+              onChange={(e) => setLessonOrder(e.target.value)}
+            />
+           
+            <button className="btn" onClick={createLesson}>
+              Add lesson
+            </button>
+          </div>
+
+          <div style={{ marginTop: 18 }}>
+            <Notice type="error" message={error} onClose={() => setError("")} />
+            <Notice
+              type="success"
+              message={success}
+              onClose={() => setSuccess("")}
+            />
+          </div>
+        </section>
+
+        <section className="panel glass-card slide-up">
+          <div className="page-header" style={{ marginBottom: 16 }}>
+            <div>
+              <h3 style={{ margin: 0 }}>Lesson list</h3>
+              <div className="helper-text" style={{ marginTop: 6 }}>
+                Edit titles, reorder items and remove lessons with immediate
+                feedback.
+              </div>
+            </div>
+            <div className="badge">{lessons.length} lesson(s)</div>
+          </div>
+
+          {loading ? (
+            <div className="empty-state">Loading course information...</div>
+          ) : !course ? (
+            <div className="empty-state">Course not found.</div>
+          ) : lessons.length === 0 ? (
+            <div className="empty-state">
+              No lessons yet. Add your first lesson above.
+            </div>
+          ) : (
+            <div className="list-grid">
+              {lessons.map((lesson) => (
+                <LessonRow
+                  key={lesson.id}
+                  lesson={lesson}
+                  onMoveUp={() => moveUp(lesson.id)}
+                  onMoveDown={() => moveDown(lesson.id)}
+                  onDelete={() => deleteLesson(lesson.id)}
+                  onSave={(title, order) =>
+                    updateLesson(lesson.id, title, order)
+                  }
+                />
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
     </div>
   );
 }
@@ -183,75 +275,93 @@ function LessonRow({ lesson, onMoveUp, onMoveDown, onDelete, onSave }) {
   }, [lesson.title, lesson.order]);
 
   async function save() {
-    const t = title.trim();
-    if (!t) return;
-    await onSave(t, order);
+    const nextTitle = title.trim();
+    if (!nextTitle) return;
+    await onSave(nextTitle, order);
     setEditing(false);
   }
 
   return (
-    <div style={styles.item}>
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
+    <div className="lesson-card slide-up">
+      <div className="card-top">
         <div style={{ flex: 1 }}>
           {editing ? (
-            <div style={styles.row}>
-              <input style={styles.input} value={title} onChange={(e) => setTitle(e.target.value)} />
-              <input style={styles.input} type="number" min={1} value={order} onChange={(e) => setOrder(e.target.value)} />
+            <div className="row-wrap">
+              <input
+                className="input"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+              />
+              <input type="input" />
+              <input
+                className="input"
+                placeholder="Lesson description..."
+                value={lessonDescription}
+                onChange={(e) => setLessonDescription(e.target.value)}
+              />
+              <input
+                className="input"
+                type="number"
+                min={1}
+                style={{ maxWidth: 110 }}
+                value={order}
+                onChange={(e) => setOrder(e.target.value)}
+              />
             </div>
-          ) : (
-            <div style={{ fontWeight: 800 }}>
-              #{lesson.order} — {lesson.title}
-            </div>
-          )}
-          <div style={{ fontSize: 12, opacity: 0.7 }}>
-            Updated: {new Date(lesson.updatedAt).toLocaleString()}
-          </div>
-        </div>
-
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "flex-end" }}>
-          <button style={styles.btnSmall} onClick={onMoveUp}>Up</button>
-          <button style={styles.btnSmall} onClick={onMoveDown}>Down</button>
-
-          {!editing ? (
-            <button style={styles.btnSmall} onClick={() => setEditing(true)}>Edit</button>
           ) : (
             <>
-              <button style={styles.btnSmall} onClick={save}>Save</button>
-              <button style={styles.btnSmall} onClick={() => { setEditing(false); setTitle(lesson.title); setOrder(lesson.order); }}>
-                Cancel
-              </button>
+              <h4 className="card-title">
+                {lesson.order}. {lesson.title}
+              </h4>
+              <div className="helper-text" style={{ marginTop: 6 }}>
+                Updated{" "}
+                {lesson.updatedAt
+                  ? new Date(lesson.updatedAt).toLocaleString()
+                  : "-"}
+              </div>
             </>
           )}
-
-          <button style={styles.btnSmallDanger} onClick={onDelete}>Delete</button>
         </div>
+      </div>
+
+      <div className="course-actions">
+        {editing ? (
+          <>
+            <button className="btn btn-sm" onClick={save}>
+              Save
+            </button>
+            <button
+              className="btn-ghost btn-sm"
+              onClick={() => {
+                setTitle(lesson.title);
+                setLessonDescription(lesson.description);
+                setOrder(lesson.order);
+                setEditing(false);
+              }}
+            >
+              Cancel
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              className="btn-ghost btn-sm"
+              onClick={() => setEditing(true)}
+            >
+              Edit
+            </button>
+            <button className="btn-ghost btn-sm" onClick={onMoveUp}>
+              Move up
+            </button>
+            <button className="btn-ghost btn-sm" onClick={onMoveDown}>
+              Move down
+            </button>
+            <button className="btn-danger btn-sm" onClick={onDelete}>
+              Delete
+            </button>
+          </>
+        )}
       </div>
     </div>
   );
 }
-
-const styles = {
-  page: { minHeight: "100vh", background: "#0b1220", color: "#e6eefc", padding: 16 },
-  header: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
-  card: { background: "#121a2b", border: "1px solid #25324a", borderRadius: 12, padding: 12 },
-  row: { display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" },
-  input: {
-    flex: 1, minWidth: 180,
-    padding: 10, borderRadius: 10, border: "1px solid #25324a",
-    background: "#0f1726", color: "#e6eefc", outline: "none"
-  },
-  btn: {
-    padding: "10px 12px", borderRadius: 10, border: "1px solid #2c3f66",
-    background: "#1e2b44", color: "#e6eefc", cursor: "pointer", whiteSpace: "nowrap"
-  },
-  btnSmall: {
-    padding: "8px 10px", borderRadius: 10, border: "1px solid #2c3f66",
-    background: "#1e2b44", color: "#e6eefc", cursor: "pointer", whiteSpace: "nowrap", fontSize: 12
-  },
-  btnSmallDanger: {
-    padding: "8px 10px", borderRadius: 10, border: "1px solid #6b2b3c",
-    background: "#2b1620", color: "#ffd1dc", cursor: "pointer", whiteSpace: "nowrap", fontSize: 12
-  },
-  item: { padding: 10, borderRadius: 12, border: "1px solid #25324a", background: "#0f1726" },
-  error: { marginBottom: 10, padding: 10, borderRadius: 12, background: "#2b1620", border: "1px solid #6b2b3c", color: "#ffd1dc" },
-};

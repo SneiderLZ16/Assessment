@@ -11,20 +11,13 @@ export default function Dashboard({ onLogout }) {
     onLogout();
   }
 
-  if (selectedCourseId) {
-    return (
-      <CourseDetails
-        courseId={selectedCourseId}
-        onBack={() => setSelectedCourseId(null)}
-        onLogout={logout}
-      />
-    );
-  }
-
-  return (
-    <Courses
-      onOpenCourse={(id) => setSelectedCourseId(id)}
+  return selectedCourseId ? (
+    <CourseDetails
+      courseId={selectedCourseId}
+      onBack={() => setSelectedCourseId(null)}
       onLogout={logout}
     />
+  ) : (
+    <Courses onOpenCourse={(id) => setSelectedCourseId(id)} onLogout={logout} />
   );
 }
